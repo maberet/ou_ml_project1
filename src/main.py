@@ -3,5 +3,5 @@ def main():
     print("Hello, world!")
     return 0 # Success
 
-if __name__ == "__main__":
+if __name__ == "__main__": #comment
     main()
