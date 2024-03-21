@@ -1,22 +1,13 @@
+#This is the class for the eligibility traces Agent 
+
 import random
 import json
 from tqdm import tqdm
 from matplotlib import pyplot as plt
 from matplotlib.patches import Patch
 
-##set the parameters 
-# alpha is the learning rate
-# gamma is the discount factor
-# epsilon is the exploration factor
-# num_episodes is the number of episodes to train the agent
-# env is the environment
-# Q is the Q table
+class EligibilityAgent :
 
-# alpha = 0.01
-# n_episodes = 100_000
-
-
-class Agent:
     def __init__(self,env):
         self.env = env
         self.Q = {}
@@ -26,24 +17,40 @@ class Agent:
         self.final_epsilon = 0.01   
         self.epsilon = self.start_epsilon
         self.TDdiff=[]
+        self.lambda_ = 0.6
+        self.eligibility = {}
+
+    # Initialize the Q table 
 
     def initialize_Q(self):
         for player_sum in range(4,33): # 1 to 32 cards
             for dealer_card in range(1,12): # 1 to 11 cards, 11 means dealer has an ace 
                 for action in range(0,2):
                     self.Q[(player_sum,dealer_card,action)] = [0.0,0.0]#[random.randint(1, 100)/100,random.randint(1, 100)/100] # is the initial value of Q(s,a) for all s and a
-    
+                    self.eligibility[(player_sum,dealer_card,action)] = 0.0
     def print_Q(self):  
         for key, value in self.Q.items():
             print(key, value)
+
     
+    def initialize_E(self):
+        for player_sum in range(4,33): # 1 to 32 cards
+            for dealer_card in range(1,12):
+                for action in range(0,2):
+                    self.eligibility[(player_sum,dealer_card,action)] = 0.0
+    
+    def update_Trace (self, state):
+        for key in self.eligibility:
+            self.eligibility[key] = self.eligibility[key] * self.lambda_ * self.gamma
+        self.eligibility[state]= self.eligibility[state]+ 1.0
+
     def getQ(self):
         return self.Q
 
     def update_Q(self, state, action, reward, next_state,done):
         future_q = (not done)*max(self.Q.get(next_state)[0],self.Q.get(next_state)[1])
         td_diff = reward + self.gamma*future_q - self.Q[state][action]
-        self.Q[state][action] = self.Q[state][action] + self.alpha*(td_diff)
+        self.Q[state][action] = self.Q[state][action] + self.alpha*(td_diff*self.eligibility[state])
         self.TDdiff.append(td_diff)
 
     def get_new_action(self, state):
@@ -63,6 +70,7 @@ class Agent:
         numberdraw = 0
         numberloose = 0
         winratebyepisode = []
+        self.initialize_E()
         for episode in tqdm(range(num_episodes)):
             done = False
             state,info = self.env.reset()
@@ -70,6 +78,7 @@ class Agent:
             while not done:
                 action = self.get_new_action(state)
                 next_state, reward, done, truncated,info = self.env.step(action)
+                self.update_Trace(state)
                 self.update_Q(state, action, reward, next_state, done)
                 done = done or truncated
                 state = next_state
@@ -80,7 +89,6 @@ class Agent:
             else:
                 numberloose += 1
             winratebyepisode.append([episode, numberwin/(episode+1)])
-                
         self.plot_winrate(winratebyepisode)
         self.plot_game_stats(numberwin, numberdraw, numberloose)
         print("Training done")
@@ -89,8 +97,6 @@ class Agent:
         print("Loose rate: ", numberloose/num_episodes)
         plot_policy(create_policy_table(self.Q,ace=False),ace=False)
         plot_policy(create_policy_table(self.Q,ace=True),ace=True)
-        # policy = create_policy_table(self.Q)
-        # print(policy)
         self.save_Q()# Save the Q table to a file after training
 
     def plot_winrate(self,winratebyepisode):
@@ -115,10 +121,7 @@ class Agent:
         plt.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%', shadow=True, startangle=140)
         plt.axis('equal')
         plt.show()
-
-
-
-
+        
     # Save the Q table to a file 
     # This is useful if you want to save the Q table after training and use it later
     # self.Q is a dictionary, so we can use the json module to save it to a file
@@ -173,7 +176,7 @@ def plot_policy(policy,ace=False):
 
     legend_elements = [
         Patch(facecolor="yellow", edgecolor="black", label="Hit"),
-        Patch(facecolor="purple", edgecolor="black", label="Stick"),
+        Patch(facecolor="purple", edgecolor="black", label="Stick")
     ]
     plt.legend(handles=legend_elements, loc="upper right")
     plt.xlabel(xlabel)
