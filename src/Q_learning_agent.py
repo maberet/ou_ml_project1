@@ -55,35 +55,33 @@ class Agent:
                 return 1
 
     def train(self, num_episodes, greedyArray = [[0.5,True]]):
-        for greedy in greedyArray:  
-            self.start_epsilon = greedy[0] 
-            self.initialize_Q()
-            numberwin = 0
-            numberdraw = 0
-            numberloose = 0
-            winratebyepisode = []
-            for episode in tqdm(range(num_episodes)):
-                done = False
-                state,info = self.env.reset()
-                self.epsilon = self.final_epsilon + (self.start_epsilon - self.final_epsilon) * (num_episodes - episode) / num_episodes
-                while not done:
-                    action = self.get_new_action(state)
-                    next_state, reward, done, truncated,info = self.env.step(action)
-                    self.update_Q(state, action, reward, next_state, done)
-                    done = done or truncated
-                    state = next_state
-                if reward == 1:
-                    numberwin += 1
-                elif reward == 0:
-                    numberdraw += 1
-                else:
-                    numberloose += 1
-                winratebyepisode.append([episode, numberwin/(episode+1)])
-                    
-            pf.plot_winrate(winratebyepisode)
-            pf.plot_game_stats(numberwin, numberdraw, numberloose)
-            pf.plot_policy(pf.create_policy_table(self.Q))
-            self.save_Q()# Save the Q table to a file after training
+        self.initialize_Q()
+        numberwin = 0
+        numberdraw = 0
+        numberloose = 0
+        winratebyepisode = []
+        for episode in tqdm(range(num_episodes)):
+            done = False
+            state,info = self.env.reset()
+            self.epsilon = self.final_epsilon + (self.start_epsilon - self.final_epsilon) * (num_episodes - episode) / num_episodes
+            while not done:
+                action = self.get_new_action(state)
+                next_state, reward, done, truncated,info = self.env.step(action)
+                self.update_Q(state, action, reward, next_state, done)
+                done = done or truncated
+                state = next_state
+            if reward == 1:
+                numberwin += 1
+            elif reward == 0:
+                numberdraw += 1
+            else:
+                numberloose += 1
+            winratebyepisode.append([episode, numberwin/(episode+1)])
+                
+        pf.plot_winrate(winratebyepisode)
+        pf.plot_game_stats(numberwin, numberdraw, numberloose)
+        pf.plot_policy(pf.create_policy_table(self.Q))
+        self.save_Q()# Save the Q table to a file after training
 
 
 
