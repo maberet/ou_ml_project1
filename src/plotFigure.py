@@ -14,7 +14,7 @@ def create_policy_table(Qtable):
                     else:
                         policy[tempskey] = 1
             elif (not ace and key[2]==0):
-                if tempskey[0] <= 21 and tempskey[0] >=12:
+                if tempskey[0] <= 21 and tempskey[0] >=4:
                     if value[0] > value[1]:
                         policy[tempskey] = 0
                     else:
