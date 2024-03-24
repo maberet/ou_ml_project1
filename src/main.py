@@ -28,11 +28,9 @@ def main():
         print("Error: Agent type not recognized")
         return 1
     
-    agent.initialize_Q()
     
-    agent.train(100000, 0.1)
+    agent.train(10000)
 
-    #agent.train(1000000, 0.1)
     
     return 0 # Success
 

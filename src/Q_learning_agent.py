@@ -1,9 +1,7 @@
 import random
 import json
+import plotFigure as pf
 from tqdm import tqdm
-from matplotlib import pyplot as plt
-from matplotlib.patches import Patch
-
 ##set the parameters 
 # alpha is the learning rate
 # gamma is the discount factor
@@ -20,9 +18,9 @@ class Agent:
     def __init__(self,env):
         self.env = env
         self.Q = {}
-        self.alpha = 0.01
+        self.alpha = 0.1
         self.gamma = 0.9
-        self.start_epsilon = 0.1
+        self.start_epsilon = 0.5
         self.final_epsilon = 0.01   
         self.epsilon = self.start_epsilon
         self.TDdiff=[]
@@ -56,65 +54,36 @@ class Agent:
             else:
                 return 1
 
-    def train(self, num_episodes, epsilon):
-        self.initialize_Q()
-        self.epsilon = epsilon
-        numberwin = 0
-        numberdraw = 0
-        numberloose = 0
-        winratebyepisode = []
-        for episode in tqdm(range(num_episodes)):
-            done = False
-            state,info = self.env.reset()
-            self.epsilon = self.final_epsilon + (self.start_epsilon - self.final_epsilon) * (num_episodes - episode) / num_episodes
-            while not done:
-                action = self.get_new_action(state)
-                next_state, reward, done, truncated,info = self.env.step(action)
-                self.update_Q(state, action, reward, next_state, done)
-                done = done or truncated
-                state = next_state
-            if reward == 1:
-                numberwin += 1
-            elif reward == 0:
-                numberdraw += 1
-            else:
-                numberloose += 1
-            winratebyepisode.append([episode, numberwin/(episode+1)])
-                
-        self.plot_winrate(winratebyepisode)
-        self.plot_game_stats(numberwin, numberdraw, numberloose)
-        print("Training done")
-        print("Win rate: ", numberwin/num_episodes)
-        print("Draw rate: ", numberdraw/num_episodes)
-        print("Loose rate: ", numberloose/num_episodes)
-        plot_policy(create_policy_table(self.Q,ace=False),ace=False)
-        plot_policy(create_policy_table(self.Q,ace=True),ace=True)
-        # policy = create_policy_table(self.Q)
-        # print(policy)
-        self.save_Q()# Save the Q table to a file after training
-
-    def plot_winrate(self,winratebyepisode):
-        plt.plot([x[0] for x in winratebyepisode], [x[1] for x in winratebyepisode])
-        plt.xlabel('Episode')
-        plt.ylabel('Win rate')
-        plt.title('Win rate by episode')
-        plt.show()
-
-    def pot_td_diff(self):
-        plt.plot(self.TDdiff)
-        plt.xlabel('Episode')
-        plt.ylabel('TD difference')
-        plt.title('TD difference by episode')
-        plt.show()
-
-    def plot_game_stats(self, numberwin, numberdraw, numberloose):
-        labels = 'Win', 'Draw', 'Loose'
-        sizes = [numberwin, numberdraw, numberloose]
-        colors = ['gold', 'yellowgreen', 'lightcoral']
-        explode = (0.1, 0, 0)   
-        plt.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%', shadow=True, startangle=140)
-        plt.axis('equal')
-        plt.show()
+    def train(self, num_episodes, greedyArray = [[0.5,True]]):
+        for greedy in greedyArray:  
+            self.start_epsilon = greedy[0] 
+            self.initialize_Q()
+            numberwin = 0
+            numberdraw = 0
+            numberloose = 0
+            winratebyepisode = []
+            for episode in tqdm(range(num_episodes)):
+                done = False
+                state,info = self.env.reset()
+                self.epsilon = self.final_epsilon + (self.start_epsilon - self.final_epsilon) * (num_episodes - episode) / num_episodes
+                while not done:
+                    action = self.get_new_action(state)
+                    next_state, reward, done, truncated,info = self.env.step(action)
+                    self.update_Q(state, action, reward, next_state, done)
+                    done = done or truncated
+                    state = next_state
+                if reward == 1:
+                    numberwin += 1
+                elif reward == 0:
+                    numberdraw += 1
+                else:
+                    numberloose += 1
+                winratebyepisode.append([episode, numberwin/(episode+1)])
+                    
+            pf.plot_winrate(winratebyepisode)
+            pf.plot_game_stats(numberwin, numberdraw, numberloose)
+            pf.plot_policy(pf.create_policy_table(self.Q))
+            self.save_Q()# Save the Q table to a file after training
 
 
 
@@ -138,47 +107,3 @@ class Agent:
             #change all keys back to tuple
             self.Q = {tuple(map(int, k.split(','))): v for k, v in self.Q.items()}
             
-
-def create_policy_table(Qtable, ace =False):
-    policy = {}
-    for key, value in Qtable.items():
-        tempskey=key
-        if (ace and key[2]==1):
-            if tempskey[0] <= 21 and tempskey[0] >=11:
-                if value[0] > value[1]:
-                    policy[tempskey] = 0
-                else:
-                    policy[tempskey] = 1
-        elif (not ace and key[2]==0):
-            if tempskey[0] <= 21 and tempskey[0] >=12:
-                if value[0] > value[1]:
-                    policy[tempskey] = 0
-                else:
-                    policy[tempskey] = 1
-        else:
-            continue
-    return policy
-
-def plot_policy(policy,ace=False): 
-    x = []
-    y = []
-    for key, value in policy.items():
-        x.append(key)
-        y.append(value)
-    colors = ['yellow', 'purple']
-    plt.scatter([x[0] for x in x], [x[1] for x in x], c=y, s=100, alpha=0.5)
-    xlabel = 'Player sum'
-    if ace:
-        xlabel = 'Player sum with ace usable'
-
-    legend_elements = [
-        Patch(facecolor="yellow", edgecolor="black", label="Hit"),
-        Patch(facecolor="purple", edgecolor="black", label="Stick"),
-    ]
-    plt.legend(handles=legend_elements, loc="upper right")
-    plt.xlabel(xlabel)
-    plt.ylabel('Dealer card')
-    
-    plt.title('Policy')
-    plt.show()
-

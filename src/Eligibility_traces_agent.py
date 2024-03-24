@@ -2,18 +2,18 @@
 
 import random
 import json
+import plotFigure as pf
 from tqdm import tqdm
-from matplotlib import pyplot as plt
-from matplotlib.patches import Patch
+
 
 class EligibilityAgent :
 
     def __init__(self,env):
         self.env = env
         self.Q = {}
-        self.alpha = 0.01
+        self.alpha = 0.1
         self.gamma = 0.9
-        self.start_epsilon = 0.1
+        self.start_epsilon = 0.5
         self.final_epsilon = 0.01   
         self.epsilon = self.start_epsilon
         self.TDdiff=[]
@@ -32,7 +32,6 @@ class EligibilityAgent :
         for key, value in self.Q.items():
             print(key, value)
 
-    
     def initialize_E(self):
         for player_sum in range(4,33): # 1 to 32 cards
             for dealer_card in range(1,12):
@@ -54,7 +53,7 @@ class EligibilityAgent :
         self.TDdiff.append(td_diff)
 
     def get_new_action(self, state):
-        if random.randint(1, 100)/100 < self.epsilon:
+        if random.randint(1,100)/100 < self.epsilon:
             return self.env.action_space.sample()## random action retrieve a random action between 0 and 1
         else:
             maxi= max(self.Q.get(state)[0],self.Q.get(state)[1]) ## greedy action take the max of 
@@ -63,9 +62,8 @@ class EligibilityAgent :
             else:
                 return 1
 
-    def train(self, num_episodes, epsilon):
+    def train(self, num_episodes):
         self.initialize_Q()
-        self.epsilon = epsilon
         numberwin = 0
         numberdraw = 0
         numberloose = 0
@@ -89,38 +87,10 @@ class EligibilityAgent :
             else:
                 numberloose += 1
             winratebyepisode.append([episode, numberwin/(episode+1)])
-        self.plot_winrate(winratebyepisode)
-        self.plot_game_stats(numberwin, numberdraw, numberloose)
-        print("Training done")
-        print("Win rate: ", numberwin/num_episodes)
-        print("Draw rate: ", numberdraw/num_episodes)
-        print("Loose rate: ", numberloose/num_episodes)
-        plot_policy(create_policy_table(self.Q,ace=False),ace=False)
-        plot_policy(create_policy_table(self.Q,ace=True),ace=True)
+        pf.plot_winrate(winratebyepisode)
+        pf.plot_game_stats(numberwin, numberdraw, numberloose)
+        pf.plot_policy(pf.create_policy_table(self.Q))
         self.save_Q()# Save the Q table to a file after training
-
-    def plot_winrate(self,winratebyepisode):
-        plt.plot([x[0] for x in winratebyepisode], [x[1] for x in winratebyepisode])
-        plt.xlabel('Episode')
-        plt.ylabel('Win rate')
-        plt.title('Win rate by episode')
-        plt.show()
-
-    def pot_td_diff(self):
-        plt.plot(self.TDdiff)
-        plt.xlabel('Episode')
-        plt.ylabel('TD difference')
-        plt.title('TD difference by episode')
-        plt.show()
-
-    def plot_game_stats(self, numberwin, numberdraw, numberloose):
-        labels = 'Win', 'Draw', 'Loose'
-        sizes = [numberwin, numberdraw, numberloose]
-        colors = ['gold', 'yellowgreen', 'lightcoral']
-        explode = (0.1, 0, 0)   
-        plt.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%', shadow=True, startangle=140)
-        plt.axis('equal')
-        plt.show()
         
     # Save the Q table to a file 
     # This is useful if you want to save the Q table after training and use it later
@@ -141,47 +111,3 @@ class EligibilityAgent :
             #change all keys back to tuple
             self.Q = {tuple(map(int, k.split(','))): v for k, v in self.Q.items()}
             
-
-def create_policy_table(Qtable, ace =False):
-    policy = {}
-    for key, value in Qtable.items():
-        tempskey=key
-        if (ace and key[2]==1):
-            if tempskey[0] <= 21 and tempskey[0] >=11:
-                if value[0] > value[1]:
-                    policy[tempskey] = 0
-                else:
-                    policy[tempskey] = 1
-        elif (not ace and key[2]==0):
-            if tempskey[0] <= 21 and tempskey[0] >=12:
-                if value[0] > value[1]:
-                    policy[tempskey] = 0
-                else:
-                    policy[tempskey] = 1
-        else:
-            continue
-    return policy
-
-def plot_policy(policy,ace=False): 
-    x = []
-    y = []
-    for key, value in policy.items():
-        x.append(key)
-        y.append(value)
-    colors = ['yellow', 'purple']
-    plt.scatter([x[0] for x in x], [x[1] for x in x], c=y, s=100, alpha=0.5)
-    xlabel = 'Player sum'
-    if ace:
-        xlabel = 'Player sum with ace usable'
-
-    legend_elements = [
-        Patch(facecolor="yellow", edgecolor="black", label="Hit"),
-        Patch(facecolor="purple", edgecolor="black", label="Stick")
-    ]
-    plt.legend(handles=legend_elements, loc="upper right")
-    plt.xlabel(xlabel)
-    plt.ylabel('Dealer card')
-    
-    plt.title('Policy')
-    plt.show()
-
