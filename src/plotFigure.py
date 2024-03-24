@@ -24,10 +24,10 @@ def create_policy_table(Qtable):
         policytab.append(policy)
     return policytab
 
-def plot_policy(policy): 
+def plot_policy(policy,decaying): 
     #Plot the two graph next to each other 
     fig, axs = plt.subplots(1,2, figsize=(10, 5))
-    fig.suptitle('Policy')
+    fig.suptitle('Policy for the agent with decaying epsilon== '+str(decaying))
     for i in range(2):
         x = []
         y = []
@@ -49,11 +49,25 @@ def plot_policy(policy):
     plt.show()
 
 
-def plot_winrate(winratebyepisode):
+def plot_winrate(winratebyepisode,decaying=False):
     plt.plot([x[0] for x in winratebyepisode], [x[1] for x in winratebyepisode])
     plt.xlabel('Episode')
     plt.ylabel('Win rate')
-    plt.title('Win rate by episode')
+    if decaying:
+        plt.title('Win rate by episode with decaying epsilon')
+    else:
+        plt.title('Win rate by episode without decaying epsilon')
+    plt.show()
+
+def plot_winrate_comparison(winratebyepisode, winratebyepisodeD):
+    plt.figure(figsize=(10, 6))
+    plt.plot([x[0] for x in winratebyepisode], [x[1] for x in winratebyepisode], label='Constant Epsilon', marker='o', markevery=500, color='red')
+    plt.plot([x[0] for x in winratebyepisodeD], [x[1] for x in winratebyepisodeD], label='Decaying Epsilon', marker='o', markevery=500, color='green')
+    plt.xlabel('Episodes')
+    plt.ylabel('Win Rate')
+    plt.title('Win Rate over 10,000 Episodes')
+    plt.grid(True)
+    plt.legend()
     plt.show()
 
 
