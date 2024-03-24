@@ -85,7 +85,8 @@ class EligibilityAgent :
                 done = done or truncated
                 if not done: 
                     self.update_Trace(state)
-                    self.update_Q(state, action, reward, next_state, done)
+                    next_action = self.get_new_action(next_state)  # Next action choice for SARSA
+                    self.Q[state][action] += self.alpha * (reward + self.gamma * self.Q[next_state][next_action] - self.Q[state][action])*self.eligibility[state]   ##Update the Q value
                     ##Update the policy of the agent
                     self.policy[state] = np.argmax(self.Q[state])
                     state ,action =next_state, next_action
