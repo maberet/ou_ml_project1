@@ -29,8 +29,8 @@ def parser():
         return 1
     return agenttype, args.twist
 
-number_of_episodes_training = 100000
-number_of_episodes_testing = 10000
+number_of_episodes_training = 1_000_00
+number_of_episodes_testing = 10_000
 
 def main():
     agenttype, twist = parser()

@@ -144,7 +144,7 @@ class Agent:
 
 if __name__ == "__main__":
 
-    env = gym.make("Blackjack-v1", sab=True)
+    env = gym.make("BlackjackCustom-v0")
     agent = Agent(env)
     agentD = Agent(env,decay=True)
     print("Training of the agent with constant epsilon")

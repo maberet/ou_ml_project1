@@ -7,6 +7,13 @@ from tqdm import tqdm
 import numpy as np
 import gymnasium as gym
 
+from gymnasium.envs.registration import register
+
+register(
+id='BlackjackCustom-v0',
+entry_point='BlackjackEnv:BlackjackEnv',
+kwargs={'sab': True}
+)
 
 class EligibilityAgent :
 
@@ -146,7 +153,7 @@ class EligibilityAgent :
 
 if __name__ == "__main__":
 
-    env = gym.make("Blackjack-v1", sab=True)
+    env = gym.make("BlackjackCustom-v0")
     agent = EligibilityAgent(env)
     agentD = EligibilityAgent(env,decay=True)
     print("Training of the agent with constant epsilon")
